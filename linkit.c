@@ -22,7 +22,6 @@ int isEmpty();
 int main() {
 	int choice;
 	char tmp_data[150];
-	struct data *head;
 
 	while(choice != 0){
         menu();
@@ -88,7 +87,7 @@ void ask_data(char *data) {
 	printf("\nEnter the person's phone number: ");
 	scanf("%s", &phone);
 
-	//Store user's inputs to string
+	//Store user's inputs into a string
 	sprintf(data, "%s %s : %s %s : %s", firstname, lastname, address, addnum, phone);
 }
 
