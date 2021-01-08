@@ -26,7 +26,7 @@ void freehash(node* tmpnode);
 int main() {
 	char word[WORD_SIZE], tmpword[WORD_SIZE];				// variables for scannig words
 	char filename[100];										// variable for textfile's name
-	int counter = 0, hashresult;							// counter keeps track of acceptable letters in each word
+	int hashresult;											// result of hashing
 	char tmpstr[2];											// temporary variable for each letter in a word
 
 	// initialize the hashtable with empty strings
@@ -67,17 +67,17 @@ int main() {
 	// go through each word in file
 	while (fscanf(txtfile, " %49[a-z'A-Z]", tmpword) == 1) {
 		fscanf(txtfile, "%*[^a-zA-Z]", tmpword);
-		//printf("%s\n", tmpword);
+
+		// lower all the letters in tmpword
 		for (int i = 0; i < strlen(tmpword); ++i)
 		{
 			tmpword[i] = tolower(tmpword[i]);
 		}
-
+		// if tmpword exists
 		if (strlen(tmpword) > 0)
-		{
-			//printf("haloo\n");
+		{	
+			// insert it to the hashtable
 			hashresult = insert_string(tmpword);
-			//printf("word: %s  hashed to index: %d\n", tmpword, hashresult);
 			if(hashresult < 0){
 	            printf("HASH TABLE FULL. CANCELING\n");
 	            fclose(txtfile);
@@ -85,15 +85,14 @@ int main() {
 	        }
 		}
 	}
-
-	// stop clock, calculate the time it took to store all words in hashtable
-	clock_t end = clock();
-	double time_spent_hash = (double)(end - begin) / CLOCKS_PER_SEC;
-
-	printf("Hashtable succesfully initialized!\n");
-
 	// close text file
 	fclose(txtfile);
+
+	// stop clock, calculate the time it took to store all words in hashtable and calculate top 100 words
+	clock_t end = clock();
+	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+	printf("Hashtable succesfully initialized!\n");
 
     printf("\n100 most popular words are:\n");
     for (int i = 0; i < 100; ++i)
@@ -101,7 +100,7 @@ int main() {
 		printf("%d: '%s' was found %u times\n",i+1, str_top100[i], int_top100[i]);
 	}
 
-	printf("\nTotal time: %.2fs\n", time_spent_hash);
+	printf("\nTotal time: %.2fs\n", time_spent);
 
 	// free the hashtable
 	for (int i = 0; i < HASH_TABLE_SIZE; ++i)
@@ -115,7 +114,7 @@ int main() {
 	return 0;
 }
 
-// hash function
+// hash function, idea from https://stackoverflow.com/questions/7666509/hash-function-for-string
 unsigned long hash(unsigned char *str, int multiplier) {
     unsigned long hash = 5381;
     int num;
@@ -135,7 +134,7 @@ unsigned int insert_string(char* string) {
     char copystr[WORD_SIZE];
     strcpy(copystr, string);
 
-
+    // get hash key for string
     n = hash(string, 0);
 	node* new_node = (node*)malloc(sizeof(node));
 	// if something went wrong, return -1
@@ -166,6 +165,7 @@ void check100(int n, char *str) {
     	count = hashcounts[n];
     }
 
+    // go through top100 list
 	for (k = 0; k < 101; ++k)
     {
     	// check if this num is more popular than the ones in current top 100
@@ -174,19 +174,19 @@ void check100(int n, char *str) {
     		// if the word is already in top100 list
     		if (strcmp(str, str_top100[k]) == 0)
     		{	
-    			// update that word's count
+    			// update that word's count and break the loop
     			int_top100[k] = count;
     			break;
     		}
-    		// if it is, move all numbers in top100 list one step to the right
-    		for (int i = 100; i > k; --i)
+    		// if it is more popular, move all numbers in top100 list one step to the right
+    		for (int i = 101; i > k; --i)
     		{
     			int_top100[i] = int_top100[i - 1];
     		}
     		// place new string in it's correct place in top100
     		int_top100[k] = count;
     		// one step to the right in strtop also
-    		for (int i = 100; i > k; --i)
+    		for (int i = 101; i > k; --i)
     		{
     			sprintf(str_top100[i],"%s" ,str_top100[i - 1]);
     		}
@@ -198,7 +198,7 @@ void check100(int n, char *str) {
     // check if there is any copies of that word in top100 list
     for (int j = k+1; j < 101; ++j)
 	{	
-		// if there is, move every word after that one step to the left
+		// if there is, move every word after that one step to the left, so the copy will be overwritten
 		if (strcmp(str, str_top100[j]) == 0)
 		{
 			for (int i = j; i < 101; ++i)
