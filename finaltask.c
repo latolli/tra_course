@@ -21,19 +21,21 @@ int int_top100[101];										// top100 list for most popular words, stores word
 unsigned long hash(unsigned char *str, int multiplier);
 unsigned int insert_string(char *string);
 void check100(int count, char *str);
-void freehash(node* tmpnode);
+void delhash(node* tmpnode);
 
 int main() {
-	char word[WORD_SIZE], tmpword[WORD_SIZE];				// variables for scannig words
+	char tmpword[WORD_SIZE];				// variables for scannig words
 	char filename[100];										// variable for textfile's name
 	int hashresult;											// result of hashing
 
 	// initialize the hashtable with empty strings
-    for(int i=0; i < HASH_TABLE_SIZE; i++){
+    for(int i=0; i < HASH_TABLE_SIZE; i++)
+    {
         hashtable[i] = NULL;
     }
     // initialize the hashcounts with zeros
-    for(int i=0; i < HASH_TABLE_SIZE; i++){
+    for(int i=0; i < HASH_TABLE_SIZE; i++)
+    {
         hashtable[i] = 0;
     }
     // initialize top 100 list with zeros
@@ -78,7 +80,7 @@ int main() {
 			// insert it to the hashtable
 			hashresult = insert_string(tmpword);
 			if(hashresult < 0){
-	            printf("HASH TABLE FULL. CANCELING\n");
+	            printf("ERROR WITH INSERTING TO HASHTABLE. CANCELING\n");
 	            fclose(txtfile);
 	            return 0;
 	        }
@@ -102,11 +104,12 @@ int main() {
 	printf("\nTotal time: %.2fs\n", time_spent);
 
 	// free the hashtable
+	printf("Deleting hashtable..");
 	for (int i = 0; i < HASH_TABLE_SIZE; ++i)
     {
         if (hashtable[i] != NULL)
         {
-            freehash(hashtable[i]);
+            delhash(hashtable[i]);
         }
     }
 
@@ -211,7 +214,7 @@ void check100(int n, char *str) {
 }
 
 // function to free the hashtable
-void freehash(node* tmpnode) {
+void delhash(node* tmpnode) {
     if (tmpnode->next == NULL)
     {
         free(tmpnode);
@@ -219,7 +222,7 @@ void freehash(node* tmpnode) {
 
     else 
     {
-        freehash(tmpnode->next);
+        delhash(tmpnode->next);
         free(tmpnode);
     }
 }
