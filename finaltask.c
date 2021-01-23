@@ -27,7 +27,6 @@ int main() {
 	char word[WORD_SIZE], tmpword[WORD_SIZE];				// variables for scannig words
 	char filename[100];										// variable for textfile's name
 	int hashresult;											// result of hashing
-	char tmpstr[2];											// temporary variable for each letter in a word
 
 	// initialize the hashtable with empty strings
     for(int i=0; i < HASH_TABLE_SIZE; i++){
