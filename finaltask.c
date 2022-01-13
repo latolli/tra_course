@@ -4,116 +4,121 @@
 #include <ctype.h>
 #include <time.h>
 
-#define HASH_TABLE_SIZE 1048576
-#define WORD_SIZE 50
+#define HASH_TABLE_SIZE 2000000
+#define WORD_SIZE 100
 
 typedef struct node {
     char* word;
-    struct node* next;
+    int counter;
 } node;
 
-node* hashtable[HASH_TABLE_SIZE];							// initialize hashtable that stores words
-static int hashcounts[HASH_TABLE_SIZE];						// initialize hashtable, that keeps count of words
-
-char str_top100[101][WORD_SIZE];							// top100 list for most popular words, stores words
-int int_top100[101];										// top100 list for most popular words, stores word counts
-
 unsigned long hash(unsigned char *str, int multiplier);
-unsigned int insert_string(char *string);
-void check100(int count, char *str);
-void delhash(node* tmpnode);
+unsigned int insert_string(char *string, struct node* table);
+unsigned int check_toplist(char *string, int count, struct node* table);
 
 int main() {
-	char tmpword[WORD_SIZE];				// variables for scannig words
-	char filename[100];										// variable for textfile's name
-	int hashresult;											// result of hashing
+    char tmpword[WORD_SIZE];                                // variable for scannig words
+    char filename[2000];                                    // variable for textfile's name
+    int hashresult;                                         // result of hashing
 
-	// initialize the hashtable with empty strings
-    for(int i=0; i < HASH_TABLE_SIZE; i++)
+    node * hashtable = malloc(sizeof(node) * HASH_TABLE_SIZE);  // initialize hashtable that stores words
+    node * top100list = malloc(sizeof(node) * 100);             // initialize list for top 100 words
+
+    // initialize the hashtable with empty strings
+    for(int i = 0; i < HASH_TABLE_SIZE; i++)
     {
-        hashtable[i] = NULL;
+        hashtable[i].word = NULL;
     }
-    // initialize the hashcounts with zeros
-    for(int i=0; i < HASH_TABLE_SIZE; i++)
+    // initialize the hashtable counts with zeros
+    for(int i = 0; i < HASH_TABLE_SIZE; i++)
     {
-        hashtable[i] = 0;
+        hashtable[i].counter = 0;
     }
-    // initialize top 100 list with zeros
-	for (int i = 0; i < 101; ++i)
+    // initialize the top 100 list with empty strings
+    for(int i = 0; i < 100; i++)
     {
-    	int_top100[i] = 0;
+        top100list[i].word = NULL;
+    }
+    // initialize the top 100 list counts with zeros
+    for(int i = 0; i < 100; i++)
+    {
+        top100list[i].counter = 0;
     }
 
+    // ask file's name from the user
+    printf("Enter file's name in a form \"file.txt\": ");
+    scanf("%s", filename);
+    printf("Opening file: %s...\n", filename);
 
-	// ask file's name from the user
-	printf("Enter file's name in a form \"file.txt\": ");
-	scanf("%s", filename);
-	printf("Opening file: %s...\n", filename);
+    // pointer for the file
+    FILE *txtfile;
 
-	// pointer for the file
-	FILE *txtfile;	
-
-	// check if the file exists in current directory
-	if ((txtfile = fopen(filename, "r")) == NULL)
-	{
-		printf("Error with opening %s, program ends..", filename);
-		return 0;
-	}
-
-	printf("Initializing hashtable...\n");
-
-	// start clock for going through the textfile and inserting each word into hashtable
-	clock_t begin = clock();
-
-	// go through each word in file
-	while (fscanf(txtfile, " %49[a-z'A-Z]", tmpword) == 1) {
-		fscanf(txtfile, "%*[^a-zA-Z]", tmpword);
-
-		// lower all the letters in tmpword
-		for (int i = 0; i < strlen(tmpword); ++i)
-		{
-			tmpword[i] = tolower(tmpword[i]);
-		}
-		// if tmpword exists
-		if (strlen(tmpword) > 0)
-		{	
-			// insert it to the hashtable
-			hashresult = insert_string(tmpword);
-			if(hashresult < 0){
-	            printf("ERROR WITH INSERTING TO HASHTABLE. CANCELING\n");
-	            fclose(txtfile);
-	            return 0;
-	        }
-		}
-	}
-	// close text file
-	fclose(txtfile);
-
-	// stop clock, calculate the time it took to store all words in hashtable and calculate top 100 words
-	clock_t end = clock();
-	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-
-	printf("Hashtable succesfully initialized!\n");
-
-    printf("\n100 most popular words are:\n");
-    for (int i = 0; i < 100; ++i)
-	{
-		printf("%d: '%s' was found %u times\n",i+1, str_top100[i], int_top100[i]);
-	}
-
-	printf("\nTotal time: %.2fs\n", time_spent);
-
-	// free the hashtable
-	printf("Deleting hashtable..");
-	for (int i = 0; i < HASH_TABLE_SIZE; ++i)
+    // check if the file exists in current directory
+    if ((txtfile = fopen(filename, "r")) == NULL)
     {
-        if (hashtable[i] != NULL)
+        printf("Error with opening %s, program ends..", filename);
+        return 0;
+    }
+
+    printf("Initializing hashtable...\n");
+
+    // start clock for going through the textfile and inserting each word into hashtable
+    clock_t begin = clock();
+
+    // go through each word in file
+    while (fscanf(txtfile, " %99[A-Za-z']", tmpword) == 1) {
+        fscanf(txtfile, "%*[^A-Za-z']", tmpword);
+
+        // lower all the letters in tmpword
+        for (int i = 0; i < strlen(tmpword); ++i)
         {
-            delhash(hashtable[i]);
+            tmpword[i] = tolower(tmpword[i]);
+        }
+        // insert it to the hashtable
+        hashresult = insert_string(tmpword, hashtable);
+        if(hashresult < 0){
+            printf("ERROR WITH INSERTING TO HASHTABLE. CANCELING\n");
+            fclose(txtfile);
+            return 0;
+        }
+    }
+    // close text file
+    fclose(txtfile);
+
+    // stop clock, calculate the time it took to store all words in hashtable and calculate top 100 words
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("\nHashtable initialized in: %.2fs\n", time_spent);
+
+    printf("Hashtable succesfully initialized!\n");
+
+    for (int i = 0; i < HASH_TABLE_SIZE; ++i)
+    {
+        if (hashtable[i].word != NULL)
+        {
+            check_toplist(hashtable[i].word, hashtable[i].counter, top100list);
         }
     }
 
-	return 0;
+    // print 100 most popular words
+    printf("\n100 most popular words are:\n");
+    for (int i = 0; i < 100; ++i)
+    {
+        printf("%d. %d x %s\n", i+1, top100list[i].counter, top100list[i].word);
+    }
+
+    // free the hashtable
+    printf("\nDeleting hashtable... ");
+    free(hashtable);
+    free(top100list);
+    printf("Done!\n");
+
+    // check total time
+    clock_t end2 = clock();
+    double time_spent2 = (double)(end2 - begin) / CLOCKS_PER_SEC;
+    printf("\nTotal time: %.2fs\n", time_spent2);
+
+    return 0;
 }
 
 // hash function, idea from https://stackoverflow.com/questions/7666509/hash-function-for-string
@@ -124,105 +129,91 @@ unsigned long hash(unsigned char *str, int multiplier) {
     while (num = *str++) {
         hash = ((hash << 5) + hash) + num;
     }
-    // 1048575 is binary with only bits 1, so it basically makes sure that the key is in our hashtable range
-    hash = (hash & (1048575))+multiplier;
+    // lets make sure tha thashkey stays in our hashtable range
+    hash = hash % HASH_TABLE_SIZE + multiplier;
     return hash;
 }
 
 // function for inserting a number to hashtable
-unsigned int insert_string(char* string) {
+unsigned int insert_string(char* string, struct node* table) {
     int n;
-    // copy word to variable copystr
-    char copystr[WORD_SIZE];
-    strcpy(copystr, string);
+    int len = strlen(string);
 
     // get hash key for string
     n = hash(string, 0);
-	node* new_node = (node*)malloc(sizeof(node));
-	// if something went wrong, return -1
-    if (new_node == NULL) {
-    	return -1;
+
+    while(1) {
+        // if index is empty
+        if(table[n].word == NULL)
+        {
+            table[n].word = malloc(len+1);
+            strcpy(table[n].word, string);
+            ++table[n].counter;
+            return n;
+        }
+        // if index contains the same word
+        else if(strcmp(string, table[n].word) == 0)
+        {
+            ++table[n].counter;
+            return n;
+        }
+        // if index conatins a different word, lets check the next index
+        else if(strcmp(string, table[n].word) != 0)
+        {
+            n = (n+1) % HASH_TABLE_SIZE;
+        }
+        // if something that shouldn't happen happens, return -1
+        else
+        {
+            printf("Something went wrong");
+            return -1;
+        }
     }
-    // else, store string to the hashtable
-    else 
-    {
-        new_node->word = copystr;
-        new_node->next = hashtable[n];
-        hashtable[n] = new_node;
-    }
-    ++hashcounts[n];
-    // check, if string belongs to current top 100 words
-    check100(n, copystr);
-    // return the index
+
     return n;
-	
+    
 }
 
-
-void check100(int n, char *str) {
-	int count = 0, k;
-	// if hashtable[n] isn't empty (it shouldnt be if this function was called)
-    if (hashtable[n] != NULL)
-    {	
-    	count = hashcounts[n];
-    }
-
-    // go through top100 list
-	for (k = 0; k < 101; ++k)
+// function for checking, if a word belongs to the current top 100 list
+unsigned int check_toplist(char *string, int count, struct node* table) {
+    int len = strlen(string);
+    char tmpstr[WORD_SIZE];
+    // go through top 100 list
+    for (int i = 0; i < 100; ++i)
     {
-    	// check if this num is more popular than the ones in current top 100
-    	if (count > int_top100[k])
-    	{
-    		// if the word is already in top100 list
-    		if (strcmp(str, str_top100[k]) == 0)
-    		{	
-    			// update that word's count and break the loop
-    			int_top100[k] = count;
-    			break;
-    		}
-    		// if it is more popular, move all numbers in top100 list one step to the right
-    		for (int i = 101; i > k; --i)
-    		{
-    			int_top100[i] = int_top100[i - 1];
-    		}
-    		// place new string in it's correct place in top100
-    		int_top100[k] = count;
-    		// one step to the right in strtop also
-    		for (int i = 101; i > k; --i)
-    		{
-    			sprintf(str_top100[i],"%s" ,str_top100[i - 1]);
-    		}
-    		// save the word in strtop100
-    		sprintf(str_top100[k], "%s", str);
-			break;    	
-		}
-    }
-    // check if there is any copies of that word in top100 list
-    for (int j = k+1; j < 101; ++j)
-	{	
-		// if there is, move every word after that one step to the left, so the copy will be overwritten
-		if (strcmp(str, str_top100[j]) == 0)
-		{
-			for (int i = j; i < 101; ++i)
-    		{
-    			int_top100[i] = int_top100[i + 1];
-    			sprintf(str_top100[i],"%s" ,str_top100[i + 1]);
-    		}
-		}
-	}
-
-}
-
-// function to free the hashtable
-void delhash(node* tmpnode) {
-    if (tmpnode->next == NULL)
-    {
-        free(tmpnode);
-    }
-
-    else 
-    {
-        delhash(tmpnode->next);
-        free(tmpnode);
+        // if word's counter is bigger than some count in current top 100 list
+        if (count > table[i].counter)
+        {
+            // move all smaller indexes one step to the right, starting from the last index
+            for (int j = 99; j > i; --j)
+            {
+                // if a word is found
+                if (table[j-1].word != NULL)
+                {
+                    len = strlen(table[j-1].word);
+                    table[j].word = malloc(len+1);
+                    strcpy(table[j].word, table[j-1].word);
+                    table[j].counter = table[j-1].counter;
+                }
+            }
+            // if that index is still empty
+            if (table[i].word == NULL)
+            {
+                // insert new word to the index
+                table[i].word = malloc(len+1);
+                strcpy(table[i].word, string);
+                table[i].counter = count;
+                // no need to check further, because if this index was empty, all the following ones are also empty.
+                return i;
+            }
+            else 
+            {
+                // if it contains old word, no need to malloc again, just replace the old word with this new one
+                strcpy(table[i].word, string);
+                table[i].counter = count;
+                // no need to check further, we already found the right place for our new word
+                return i; 
+            }
+        }
     }
 }
